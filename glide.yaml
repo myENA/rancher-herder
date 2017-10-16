@@ -1,0 +1,10 @@
+package: github.com/dahendel/cattle-herder
+import:
+- package: github.com/myENA/consultant
+- package: github.com/rancherio/go-rancher
+  subpackages:
+  - v3
+- package: github.com/sirupsen/logrus
+  version: ^1.0.3
+- package: gopkg.in/go-playground/validator.v9
+  version: ^9.7.0
