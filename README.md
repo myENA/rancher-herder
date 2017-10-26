@@ -1,5 +1,5 @@
 # Rancher service registrator for consul (WIP)
-Still very mush in the POC stage. Again, this is POC code.
+Still very mush in the POC stage.
 # Purpose
 
 With Rancher v2.0 there were issues with registrator not being able to properly view all container metadata from the
@@ -43,12 +43,28 @@ However, if a port is Exposed or mapped the application will register the servic
 `docker build -t cattle-herder .`
 
 #### Run
+
+Running outside of Rancher
 ```
 docker run -d --name herder \
   -e CATTLE_URL=YOUR_CATTLE_URL \
   -e CATTLE_ACCESS_KEY=YOUR_ACCESS_KEY \
   -e CATTLE_SECRET_KEY=YOUR_SECRET_KEY \
   cattle-herder
+```
+
+Running from rancher or through rancher cli/ui you MUST add the label: `io.rancher.container.create_agent=true`
+
+Setting that label will create a service account api keys and set the CATTLE env variables.
+```yaml
+version: "2"
+
+services:
+  herder:
+    image: dahendel/cattle-herder
+    labels:
+      io.rancher.container.create_agent: true
+      REST_OF_LABELS 
 ```
 
 #TODO

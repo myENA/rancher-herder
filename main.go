@@ -2,12 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/myENA/consultant"
-	"github.com/rancherio/go-rancher/v3"
 	"log"
 	"net/url"
 	"os"
 	"strconv"
+
+	"github.com/myENA/consultant"
+	"github.com/rancherio/go-rancher/v3"
 )
 
 // Get the rancher api data from Environment variables
@@ -72,6 +73,7 @@ func buildSvcConfig(data *ContainerData) *consultant.SimpleServiceRegistration {
 
 	tags := parseTags(data.Resource.Labels.HerderServiceTags)
 	tcp, err := strconv.ParseBool(data.Resource.Labels.HerderServiceCheckTCP)
+	checkPort, _ := strconv.Atoi(data.Resource.Labels.HerderServicePort)
 
 	if err != nil {
 		log.Print(err)
@@ -81,7 +83,7 @@ func buildSvcConfig(data *ContainerData) *consultant.SimpleServiceRegistration {
 	svc := &consultant.SimpleServiceRegistration{
 		Name:        data.Resource.Name,
 		Tags:        tags,
-		CheckPort:   8080,
+		CheckPort:   checkPort,
 		Address:     data.Resource.PrimaryIPAddress,
 		CheckPath:   data.Resource.Labels.HerderServiceCheckHTTPPath,
 		CheckTCP:    tcp,
