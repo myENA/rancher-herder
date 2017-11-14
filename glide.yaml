@@ -1,7 +1,5 @@
 package: github.com/dahendel/cattle-herder
 import:
-- package: github.com/fatih/structs
-  version: v1.0
 - package: github.com/hashicorp/consul
   version: v1.0.1-rc1
   subpackages:

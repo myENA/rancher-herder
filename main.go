@@ -2,24 +2,19 @@ package main
 
 import (
 	"encoding/json"
-<<<<<<< HEAD
+	"log"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+
 	"github.com/hashicorp/consul/api"
 	"github.com/myENA/consultant"
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancherio/go-rancher/v3"
-=======
->>>>>>> 297aa112e16ad6afb3e54e7d42f7d63328483509
-	"log"
-	"os"
-<<<<<<< HEAD
-	"os/signal"
-	"syscall"
-=======
-	"strconv"
 
 	"github.com/myENA/consultant"
 	"github.com/rancherio/go-rancher/v3"
->>>>>>> 297aa112e16ad6afb3e54e7d42f7d63328483509
 )
 
 // Get the rancher api data from Environment variables
@@ -78,8 +73,6 @@ type ContainerData struct {
 	} `json:"resource,omitempty"`
 }
 
-<<<<<<< HEAD
-=======
 // Build the Consul ServiceRegistration struct
 func buildSvcConfig(data *ContainerData) *consultant.SimpleServiceRegistration {
 
@@ -106,7 +99,6 @@ func buildSvcConfig(data *ContainerData) *consultant.SimpleServiceRegistration {
 	return svc
 }
 
->>>>>>> 297aa112e16ad6afb3e54e7d42f7d63328483509
 func init() {
 
 	// Configure cattle client
