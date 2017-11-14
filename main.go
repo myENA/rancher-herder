@@ -2,19 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"log"
-	"os"
-	"os/signal"
-	"strconv"
-	"syscall"
-
 	"github.com/hashicorp/consul/api"
 	"github.com/myENA/consultant"
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancherio/go-rancher/v3"
-
-	"github.com/myENA/consultant"
-	"github.com/rancherio/go-rancher/v3"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // Get the rancher api data from Environment variables
@@ -71,32 +66,6 @@ type ContainerData struct {
 			HerderServiceTags            string `json:"herder.service.tags,omitempty"`
 		} `json:"labels,omitempty"`
 	} `json:"resource,omitempty"`
-}
-
-// Build the Consul ServiceRegistration struct
-func buildSvcConfig(data *ContainerData) *consultant.SimpleServiceRegistration {
-
-	tags := parseTags(data.Resource.Labels.HerderServiceTags)
-	tcp, err := strconv.ParseBool(data.Resource.Labels.HerderServiceCheckTCP)
-	checkPort, _ := strconv.Atoi(data.Resource.Labels.HerderServicePort)
-
-	if err != nil {
-		log.Print(err)
-		return nil
-	}
-
-	svc := &consultant.SimpleServiceRegistration{
-		Name:        data.Resource.Name,
-		Tags:        tags,
-		CheckPort:   checkPort,
-		Address:     data.Resource.PrimaryIPAddress,
-		CheckPath:   data.Resource.Labels.HerderServiceCheckHTTPPath,
-		CheckTCP:    tcp,
-		Interval:    data.Resource.Labels.HerderServiceCheckInterval,
-		CheckScheme: data.Resource.Labels.HerderServiceCheckHTTPSchema,
-	}
-
-	return svc
 }
 
 func init() {
