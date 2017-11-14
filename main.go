@@ -2,14 +2,24 @@ package main
 
 import (
 	"encoding/json"
+<<<<<<< HEAD
 	"github.com/hashicorp/consul/api"
 	"github.com/myENA/consultant"
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancherio/go-rancher/v3"
+=======
+>>>>>>> 297aa112e16ad6afb3e54e7d42f7d63328483509
 	"log"
 	"os"
+<<<<<<< HEAD
 	"os/signal"
 	"syscall"
+=======
+	"strconv"
+
+	"github.com/myENA/consultant"
+	"github.com/rancherio/go-rancher/v3"
+>>>>>>> 297aa112e16ad6afb3e54e7d42f7d63328483509
 )
 
 // Get the rancher api data from Environment variables
@@ -68,6 +78,35 @@ type ContainerData struct {
 	} `json:"resource,omitempty"`
 }
 
+<<<<<<< HEAD
+=======
+// Build the Consul ServiceRegistration struct
+func buildSvcConfig(data *ContainerData) *consultant.SimpleServiceRegistration {
+
+	tags := parseTags(data.Resource.Labels.HerderServiceTags)
+	tcp, err := strconv.ParseBool(data.Resource.Labels.HerderServiceCheckTCP)
+	checkPort, _ := strconv.Atoi(data.Resource.Labels.HerderServicePort)
+
+	if err != nil {
+		log.Print(err)
+		return nil
+	}
+
+	svc := &consultant.SimpleServiceRegistration{
+		Name:        data.Resource.Name,
+		Tags:        tags,
+		CheckPort:   checkPort,
+		Address:     data.Resource.PrimaryIPAddress,
+		CheckPath:   data.Resource.Labels.HerderServiceCheckHTTPPath,
+		CheckTCP:    tcp,
+		Interval:    data.Resource.Labels.HerderServiceCheckInterval,
+		CheckScheme: data.Resource.Labels.HerderServiceCheckHTTPSchema,
+	}
+
+	return svc
+}
+
+>>>>>>> 297aa112e16ad6afb3e54e7d42f7d63328483509
 func init() {
 
 	// Configure cattle client
