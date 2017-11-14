@@ -16,3 +16,7 @@ vendor
 
 #Intellij ide files
 .idea
+
+
+env
+cattle-herder

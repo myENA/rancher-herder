@@ -7,7 +7,7 @@ RUN apk add --update --no-cache glide git && \
   glide install && \
   go build
 
-FROM alpine
+FROM docker.ena.net:5000/alpine/deploy
 
 COPY --from=builder /go/src/github.com/dahendel/cattle-herder/cattle-herder /usr/local/bin/
 

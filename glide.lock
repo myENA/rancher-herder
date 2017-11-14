@@ -1,16 +1,12 @@
-hash: 5cb783d904c2b29b449a81cebc8fb4001ff8493d5ea6818a45dd0f4f434a2b66
-updated: 2017-10-16T08:56:10.46834916-05:00
+hash: 08bd456d48212d9ebfe6c30d6f0e7b851f44df9411526035fcb5bf75c2d20239
+updated: 2017-11-13T14:39:32.50549475-06:00
 imports:
-- name: github.com/go-playground/locales
-  version: e4cbcb5d0652150d40ad0646651076b6bd2be4f6
-  subpackages:
-  - currency
-- name: github.com/go-playground/universal-translator
-  version: 71201497bace774495daed26a3874fd339e0b538
+- name: github.com/fatih/structs
+  version: a720dfa8df582c51dee1b36feabb906bde1588bd
 - name: github.com/gorilla/websocket
-  version: 71fa72d4842364bc5f74185f4161e0099ea3624a
+  version: 7ca4275b84a9d500f68971c8c4a97f0ec18eb889
 - name: github.com/hashicorp/consul
-  version: edf7a162f63c026cdd04186004bb611549d8f45b
+  version: 783a405d781ffc5edaf2d6b5eff41e22df96644f
   subpackages:
   - api
   - watch
@@ -19,38 +15,42 @@ imports:
 - name: github.com/hashicorp/go-rootcerts
   version: 6bb64b370b90e7ef1fa532be9e591a81c3493e00
 - name: github.com/hashicorp/serf
-  version: 555c6fa2a11d1f8e08ac9964015e864a3f61e7c3
+  version: c20a0b1b1ea9eb8168bcdec0116688fa9254e449
   subpackages:
   - coordinate
 - name: github.com/mitchellh/go-homedir
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
+- name: github.com/mitchellh/mapstructure
+  version: 06020f85339e21b2478f756a78e295255ffa4d6a
 - name: github.com/myENA/consultant
-  version: 0f46f4735e9d05c6112edc76f99743bb8518988c
+  version: 28def437cc3e4fe2614504e20ed07487556f547a
 - name: github.com/myENA/go-helpers
   version: 7d17a5f4b05cb1ecfe56203c0458e22d14fb4f45
 - name: github.com/myENA/go-stdlogger
   version: 8db9487f39cfca4413eda7948dd5dcc3f1481dda
 - name: github.com/pkg/errors
-  version: 2b3a18b5f0fb6b4f9190549597d3f962c02bc5eb
+  version: f15c970de5b76fac0b59abb32d62c17cc7bed265
+- name: github.com/rancher/go-rancher-metadata
+  version: d2103caca5873119ff423d29cba09b4d03cd69b8
+  subpackages:
+  - metadata
 - name: github.com/rancherio/go-rancher
-  version: 52e2f489534007ae843065468c5a1920d542afa4
+  version: 97368393ed039a6f41721708d132de2d55b6709e
   subpackages:
   - v3
 - name: github.com/renstrom/shortuuid
   version: d728e00b727de969356736fabe7c6f405347a26c
 - name: github.com/satori/go.uuid
   version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
-- name: github.com/sirupsen/logrus
-  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
+- name: github.com/Sirupsen/logrus
+  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
 - name: golang.org/x/crypto
-  version: 9419663f5a44be8b34ca85f08abc5fe1be11f8a3
+  version: 6a293f2d4b14b8e6d3f0539e383f6d0d30fce3fd
   subpackages:
   - ssh/terminal
 - name: golang.org/x/sys
-  version: 686000749eaec0b8855b8eef5336cf63899fe51d
+  version: 665f6529cca930e27b831a0d1dafffbe1c172924
   subpackages:
   - unix
   - windows
-- name: gopkg.in/go-playground/validator.v9
-  version: a021b2ec9a8a8bb970f3f15bc42617cb520e8a64
 testImports: []
