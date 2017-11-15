@@ -1,8 +1,8 @@
-hash: 08bd456d48212d9ebfe6c30d6f0e7b851f44df9411526035fcb5bf75c2d20239
-updated: 2017-11-13T14:39:32.50549475-06:00
+hash: 4d810499e727476eb83ff72a313016844454594577bcdc8159d69d67f0acd3ff
+updated: 2017-11-15T10:39:42.400281226-06:00
 imports:
-- name: github.com/fatih/structs
-  version: a720dfa8df582c51dee1b36feabb906bde1588bd
+- name: github.com/deckarep/golang-set
+  version: 1d4478f51bed434f1dadf96dcd9b43aabac66795
 - name: github.com/gorilla/websocket
   version: 7ca4275b84a9d500f68971c8c4a97f0ec18eb889
 - name: github.com/hashicorp/consul
@@ -45,11 +45,11 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: 89742aefa4b206dcf400792f3bd35b542998eb3b
 - name: golang.org/x/crypto
-  version: 6a293f2d4b14b8e6d3f0539e383f6d0d30fce3fd
+  version: 9f005a07e0d31d45e6656d241bb5c0f2efd4bc94
   subpackages:
   - ssh/terminal
 - name: golang.org/x/sys
-  version: 665f6529cca930e27b831a0d1dafffbe1c172924
+  version: bf42f188b9bc6f2cf5b8ee5a912ef1aedd0eba4c
   subpackages:
   - unix
   - windows

@@ -16,15 +16,60 @@ func parseTags(tags string) []string {
 	return strings.Split(tags, ",")
 }
 
-func registerSvc(data *ContainerData) []string {
 
-	var registered []string
+func (d *ContainerData) isValid() bool{
+	//log.Printf("PORTS STRING: %s for %s", d.Resource.Labels.PortsString, d.Resource.Name)
+	if d.Resource.Labels.PortsString == "" {
+		log.Printf("Missing port string, returning false")
+		return false
+	}
+
+	// Do we register the service
+	if d.Resource.Labels.HerderServiceEnable == "" {
+		log.Printf("Missing enable label for : %s", d.Resource.Name)
+		return false
+	} else {
+		enable, err := strconv.ParseBool(d.Resource.Labels.HerderServiceEnable)
+
+		if err != nil {
+			log.Printf("Failed to parse enable, skipping. Error: %s", err)
+			return false
+		}
+
+		if !enable {
+			log.Printf("Enable is False")
+			return false
+		}
+
+	}
+
+	return true
+}
+
+
+
+func registerSvc(data *ContainerData) {
+
+	data.Resource.Labels.Ports = make([]*ContainerPorts, 0)
+
+	err = json.Unmarshal([]byte(data.Resource.Labels.PortsString), &data.Resource.Labels.Ports)
+
+	if err != nil {
+		log.Printf("Failed to unmarshall exposed Ports: %v", err)
+	}
+
+	if len(data.Resource.Labels.Ports) == 0 {
+		return
+	}
 
 	for _, p := range data.Resource.Labels.Ports {
 
 		var checkPort int
 		var checkTcp bool
 		var scheme string
+
+
+
 
 		if data.Resource.Labels.HerderServiceCheckTCP != "" {
 			checkTcp, err = strconv.ParseBool(data.Resource.Labels.HerderServiceCheckTCP)
@@ -59,9 +104,11 @@ func registerSvc(data *ContainerData) []string {
 		}
 
 		reg, err := consul.SimpleServiceRegister(&consultant.SimpleServiceRegistration{
-			Name:        data.Resource.Labels.ContainerName,
+			Name:        data.Resource.Labels.HerderServiceName,
 			Address:     data.Resource.PrimaryIPAddress,
-			ID:          fmt.Sprintf("%s-%s-%s-%d-%s", data.Resource.HostId, data.Resource.Labels.ContainerName, data.Resource.ID, p.ContainerPort, p.Protocol),
+			ID:          fmt.Sprintf("%s:%s:%s:%d:%s", data.Resource.HostId,
+				data.Resource.Labels.ContainerName,
+				data.Resource.ID, p.ContainerPort, p.Protocol),
 			Port:        p.ContainerPort,
 			Tags:        parseTags(data.Resource.Labels.HerderServiceTags),
 			CheckPort:   checkPort,
@@ -75,11 +122,11 @@ func registerSvc(data *ContainerData) []string {
 			log.Printf("Failed to register service %s: %s", data.Resource.Labels.ContainerName, err)
 			continue
 		}
-
+		log.Printf("Registered %s", data.Resource.Name)
 		registered = append(registered, reg)
 	}
 
-	return registered
+
 }
 
 func getWS() *url.URL {
@@ -138,46 +185,17 @@ func processEvents(conn *websocket.Conn) error {
 				log.Printf("Failed to unmarshall data: %v", err)
 			}
 
-			// Do we register the service
-			if dataMap.Resource.Labels.HerderIgnore != "" {
-				ignore, err := strconv.ParseBool(dataMap.Resource.Labels.HerderIgnore)
-
-				if err != nil {
-					log.Printf("Failed to parse ignore, skipping. Error: %s", err)
-					continue
+			if dataMap.isValid() {
+				// Is the running container on my host?
+				log.Printf("%+v", v.Data)
+				if dataMap.Resource.State == "running" && hostId == dataMap.Resource.HostId {
+					registerSvc(dataMap)
+					log.Printf("Registered Services: %s", strings.Join(registered, ", "))
 				}
-
-				if ignore {
-					continue
-				}
-
-			}
-
-			if dataMap.Resource.Labels.PortsString == "" {
+			} else {
 				continue
 			}
-
-			dataMap.Resource.Labels.Ports = make([]*ContainerPorts, 0)
-
-			err = json.Unmarshal([]byte(dataMap.Resource.Labels.PortsString), &dataMap.Resource.Labels.Ports)
-
-			if err != nil {
-				log.Printf("Failed to unmarshall exposed Ports: %v", err)
-			}
-
-			if len(dataMap.Resource.Labels.Ports) == 0 {
-				continue
-			}
-
-			if dataMap.Resource.State == "running" && hostId == dataMap.Resource.HostId {
-
-				regs := registerSvc(dataMap)
-				log.Printf("Registered Services: %s", strings.Join(regs, ", "))
-			}
-
 		}
 
 	}
-
-	return nil
 }

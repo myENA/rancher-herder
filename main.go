@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"github.com/hashicorp/consul/api"
 	"github.com/myENA/consultant"
 	"github.com/rancher/go-rancher-metadata/metadata"
@@ -10,7 +11,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
+
+
+//TODO: Add strict flag
 
 // Get the rancher api data from Environment variables
 var cattle_url = os.Getenv("CATTLE_URL")
@@ -20,8 +25,14 @@ var cattle_secret_key = os.Getenv("CATTLE_SECRET_KEY")
 var agentIp string
 var hostUUID string
 var hostId string
+var registered []string
+
+var consulServices []interface{}
+var rancherServices []interface{}
 
 const metadataUrl = "http://rancher-metadata/latest"
+
+var interval time.Duration
 
 // Set the rancher client
 var c = &client.RancherClient{}
@@ -53,19 +64,27 @@ type ContainerData struct {
 		PrimaryIPAddress string `json:"primaryIpAddress,omitempty"`
 		State            string `json:"state,omitempty"`
 		Labels           struct {
-			ContainerName                string `json:"io.rancher.container.name,omitempty"`
-			PortsString                  string `json:"annotation.io.kubernetes.container.ports,omitempty"`
+			ContainerName                string `json:"io.rancher.container.name,omitempty" mapstructure:"io.rancher.container.name"`
+			PortsString                  string `json:"annotation.io.kubernetes.container.ports,omitempty" mapstructure:"annotation.io.kubernetes.container.ports"`
 			Ports                        []*ContainerPorts
-			HerderIgnore                 string `json:"herder.include,omitempty"`
-			HerderServiceCheckPath       string `json:"herder.service.check.http.path,omitempty"`
-			HerderServiceCheckPort       string `json:"herder.service.check.http.port,omitempty"`
-			HerderServiceCheckHTTPSchema string `json:"herder.service.check.http.schema,omitempty"`
-			HerderServiceCheckInterval   string `json:"herder.service.check.interval,omitempty"`
-			HerderServiceCheckTCP        string `json:"herder.service.check.tcp,omitempty"`
-			HerderServiceName            string `json:"herder.service.name,omitempty"`
-			HerderServiceTags            string `json:"herder.service.tags,omitempty"`
+			HerderServiceEnable          string `json:"herder.service.enable,omitempty" mapstructure:"herder.service.enable"`
+			HerderServiceCheckPath       string `json:"herder.service.check.http.path,omitempty" mapstructure:"herder.service.check.http.path"`
+			HerderServiceCheckPort       string `json:"herder.service.check.http.port,omitempty" mapstructure:"herder.service.check.http.port"`
+			HerderServiceCheckHTTPSchema string `json:"herder.service.check.http.schema,omitempty" mapstructure:"herder.service.check.http.schema"`
+			HerderServiceCheckInterval   string `json:"herder.service.check.interval,omitempty" mapstructure:"herder.service.check.interval"`
+			HerderServiceCheckTCP        string `json:"herder.service.check.tcp,omitempty" mapstructure:"herder.service.check.tcp"`
+			HerderServiceName            string `json:"herder.service.name,omitempty" mapstructure:"herder.service.name"`
+			HerderServiceTags            string `json:"herder.service.tags,omitempty" mapstructure:"herder.service.tags"`
 		} `json:"labels,omitempty"`
 	} `json:"resource,omitempty"`
+}
+
+type ServiceName struct {
+	HostId        string
+	ContainerName string
+	ContainerId   string
+	ContainerPort string
+	Protocol      string
 }
 
 func init() {
@@ -114,11 +133,12 @@ func init() {
 	consul, err = consultant.NewClient(conf)
 
 	if err != nil {
-		log.Printf("Unable to establish a consul client on the host %s", agentIp)
+		log.Fatalf("Unable to establish a consul client on the host %s", agentIp)
 	}
 
 	log.Printf("Established consul connection to %s", agentIp)
-
+	flag.DurationVar(&interval, "interval", 10, "How many minutes to run reconcile")
+	flag.Parse()
 }
 
 func main() {
@@ -147,9 +167,9 @@ func main() {
 		errChan <- processEvents(conn)
 	}()
 
-	//go func() {
-	//	errChan <- reconcile()
-	//}()
+	go func() {
+		errChan <- reconcile()
+	}()
 
 	select {
 	case sig := <-sigChan:
