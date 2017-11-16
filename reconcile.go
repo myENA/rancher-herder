@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+
+// Set consulServices for reconciliation
 func getConsulServices() error {
 	consulServices = nil
 
@@ -29,6 +31,25 @@ func getConsulServices() error {
 	return nil
 }
 
+// Check if a container is running or stopped. running = true stopped = false
+func containerStatus(containerId string) bool {
+
+	c, err := c.Container.ById(containerId)
+
+	if err != nil {
+		log.Printf("Error getting container status: %s", err)
+		return false
+	}
+
+	if c.State == "running" {
+		return true
+	}
+
+	return false
+
+}
+
+// set rancherServices for reconciliation
 func getRancherContainers() error {
 
 	rancherServices = nil
@@ -63,6 +84,8 @@ func getRancherContainers() error {
 	return nil
 }
 
+
+// Find services that are in rancher but not in consul
 func diffServices() []interface{} {
 	rancherSet := set.NewSetFromSlice(rancherServices)
 	consulSet := set.NewSetFromSlice(consulServices)
@@ -75,6 +98,7 @@ func diffServices() []interface{} {
 	return diff
 }
 
+// Reconcile any missing or stopped services
 func reconcile() error {
 
 	for {
@@ -116,8 +140,13 @@ func reconcile() error {
 			if len(split) != 5 {
 				continue
 			}
-			missing = append(missing, buildSvcData(split[2], c.(string)))
+			// If the container is running the it is missing and we add it
+			if containerStatus(split[2]) {
+				missing = append(missing, buildSvcData(split[2], c.(string)))
+			}
 		}
+
+
 
 		for _, m := range missing {
 			if m.isValid() {

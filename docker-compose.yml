@@ -1,0 +1,9 @@
+version: "2"
+
+services:
+  herder:
+    image: dahendel/cattle-herder
+    labels:
+      io.rancher.container.create_agent: true
+      io.rancher.container.agent.role: environmentAdmin
+      io.rancher.scheduler.global: true
