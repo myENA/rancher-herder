@@ -11,7 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
+	time "time"
 )
 
 // Get the rancher api data from Environment variables

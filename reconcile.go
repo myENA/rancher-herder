@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-
 // Set consulServices for reconciliation
 func getConsulServices() error {
 	consulServices = nil
@@ -31,25 +30,7 @@ func getConsulServices() error {
 	return nil
 }
 
-// Check if a container is running or stopped. running = true stopped = false
-func containerStatus(containerId string) bool {
-
-	c, err := c.Container.ById(containerId)
-
-	if err != nil {
-		log.Printf("Error getting container status: %s", err)
-		return false
-	}
-
-	if c.State == "running" {
-		return true
-	}
-
-	return false
-
-}
-
-// set rancherServices for reconciliation
+// set rancherServices for reconciliation only for running containers
 func getRancherContainers() error {
 
 	rancherServices = nil
@@ -62,17 +43,19 @@ func getRancherContainers() error {
 	for _, c := range containers.Data {
 		for l, v := range c.Labels {
 			if l == "annotation.io.kubernetes.container.ports" {
-				ports := make([]*ContainerPorts, 0)
-				err := json.Unmarshal([]byte(v), &ports)
+				if c.State == "running" {
+					ports := make([]*ContainerPorts, 0)
+					err := json.Unmarshal([]byte(v), &ports)
 
-				if err != nil {
-					log.Print(err)
-				}
+					if err != nil {
+						log.Print(err)
+					}
 
-				for _, p := range ports {
-					svcName := strings.ToLower(fmt.Sprintf("%s:%s:%s:%d:%s", c.HostId, c.Name, c.Id,
-						p.ContainerPort, p.Protocol))
-					rancherServices = append(rancherServices, svcName)
+					for _, p := range ports {
+						svcName := strings.ToLower(fmt.Sprintf("%s:%s:%s:%d:%s", c.HostId, c.Name, c.Id,
+							p.ContainerPort, p.Protocol))
+						rancherServices = append(rancherServices, svcName)
+					}
 				}
 			}
 		}
@@ -83,7 +66,6 @@ func getRancherContainers() error {
 	}
 	return nil
 }
-
 
 // Find services that are in rancher but not in consul
 func diffServices() []interface{} {
@@ -112,7 +94,7 @@ func reconcile() error {
 			return err2
 		}
 
-		// Get all of the stopped containers from Rancher and check if they are registered in Consul
+		// Get all of the containers from Rancher
 		containers, err := c.Container.List(nil)
 
 		if err != nil {
@@ -126,10 +108,7 @@ func reconcile() error {
 			if state.State == "stopped" {
 				svcPrefix := fmt.Sprintf("%s:%s:%s", state.HostId, state.Name, state.Id)
 				serviceId := getConsulServiceId(svcPrefix)
-				// If the container was registered in consul serviceId should not be blank
-				if serviceId != "" {
-					stopped = append(stopped, serviceId)
-				}
+				stopped = append(stopped, serviceId)
 			}
 		}
 
@@ -140,13 +119,10 @@ func reconcile() error {
 			if len(split) != 5 {
 				continue
 			}
-			// If the container is running the it is missing and we add it
-			if containerStatus(split[2]) {
-				missing = append(missing, buildSvcData(split[2], c.(string)))
-			}
+
+			missing = append(missing, buildSvcData(split[2], c.(string)))
+
 		}
-
-
 
 		for _, m := range missing {
 			if m.isValid() {
@@ -156,11 +132,19 @@ func reconcile() error {
 		}
 
 		for _, s := range stopped {
-			log.Printf("Reconciling stopped service %s", s)
-			deRegister(s)
+			// Make sure that the service is still registered before we try to deregister
+			for _, c := range consulServices {
+				if c == s {
+					log.Printf("Reconciling stopped service %s", s)
+					deRegister(s)
+				} else {
+					continue
+				}
+			}
+
 		}
 
-		time.Sleep(time.Minute * interval)
+		time.Sleep(interval)
 	}
 }
 
@@ -183,11 +167,13 @@ func buildSvcData(containerId string, containerName string) *ContainerData {
 		log.Print(err)
 	}
 
+	// Extract our labels from the api response
 	err = mapstructure.Decode(container.Labels, &dataMap.Resource.Labels)
 	if err != nil {
 		log.Print(err)
 	}
 
+	// Build the Container Data for svcregister
 	dataMap.Resource.ID = container.Id
 	dataMap.Resource.HostId = container.HostId
 	dataMap.Resource.Name = containerName
@@ -195,5 +181,4 @@ func buildSvcData(containerId string, containerName string) *ContainerData {
 	dataMap.Resource.State = container.State
 
 	return dataMap
-
 }
