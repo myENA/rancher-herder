@@ -89,7 +89,7 @@ func init() {
 	flag.StringVar(&consulDc, "consulDc", "", "Consul Datacenter")
 	flag.BoolVar(&debug, "debug", false, "Enable debug logs")
 	flag.BoolVar(&strict, "strict", false, "Enable this flag to enforce the herder.service.enable label")
-	flag.DurationVar(&interval, "interval", 5, "How often to run reconcile calculated by value * time.Minute")
+	flag.DurationVar(&interval, "interval", 5*time.Minute, "How often to run reconcile ex. 5m")
 	flag.Parse()
 
 	// Configure cattle client
