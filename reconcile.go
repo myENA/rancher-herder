@@ -106,9 +106,11 @@ func reconcile() error {
 		var stopped []string
 		for _, state := range containers.Data {
 			if state.State == "stopped" {
-				svcPrefix := fmt.Sprintf("%s:%s:%s", state.HostId, state.Name, state.Id)
-				serviceId := getConsulServiceId(svcPrefix)
-				stopped = append(stopped, serviceId)
+				if hostId == state.HostId {
+					svcPrefix := fmt.Sprintf("%s:%s:%s", state.HostId, state.Name, state.Id)
+					serviceId := getConsulServiceId(svcPrefix)
+					stopped = append(stopped, serviceId)
+				}
 			}
 		}
 
@@ -126,8 +128,10 @@ func reconcile() error {
 
 		for _, m := range missing {
 			if m.isValid() {
-				log.Printf("Reconciling %s adding to consul", m.Resource.Name)
-				registerSvc(m)
+				if hostId == m.Resource.HostId {
+					log.Printf("Reconciling %s adding to consul", m.Resource.Name)
+					registerSvc(m)
+				}
 			}
 		}
 
