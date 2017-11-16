@@ -16,61 +16,58 @@ func parseTags(tags string) []string {
 	return strings.Split(tags, ",")
 }
 
+func (d *ContainerData) isValid() bool {
 
-func (d *ContainerData) isValid() bool{
-	//log.Printf("PORTS STRING: %s for %s", d.Resource.Labels.PortsString, d.Resource.Name)
 	if d.Resource.Labels.PortsString == "" {
-		log.Printf("Missing port string, returning false")
+		if debug {
+			log.Printf("Missing port string in labels for %s, skipping.", d.Resource.Name)
+		}
 		return false
 	}
 
-	// Do we register the service
-	if d.Resource.Labels.HerderServiceEnable == "" {
-		log.Printf("Missing enable label for : %s", d.Resource.Name)
-		return false
-	} else {
-		enable, err := strconv.ParseBool(d.Resource.Labels.HerderServiceEnable)
-
-		if err != nil {
-			log.Printf("Failed to parse enable, skipping. Error: %s", err)
+	// If the strict flag is passed check the herder.service.enable label
+	if strict {
+		if d.Resource.Labels.HerderServiceEnable == "" {
+			log.Printf("Missing enable label for : %s", d.Resource.Name)
 			return false
-		}
+		} else {
+			enable, err := strconv.ParseBool(d.Resource.Labels.HerderServiceEnable)
 
-		if !enable {
-			log.Printf("Enable is False")
-			return false
-		}
+			if err != nil {
+				log.Printf("Failed to parse enable, skipping. Error: %s", err)
+				return false
+			}
 
+			return enable
+		}
 	}
 
 	return true
 }
 
-
-
 func registerSvc(data *ContainerData) {
 
 	data.Resource.Labels.Ports = make([]*ContainerPorts, 0)
-
+	// Unmarshall the k8s ports data
 	err = json.Unmarshal([]byte(data.Resource.Labels.PortsString), &data.Resource.Labels.Ports)
 
 	if err != nil {
 		log.Printf("Failed to unmarshall exposed Ports: %v", err)
 	}
 
+	// If no ports return
 	if len(data.Resource.Labels.Ports) == 0 {
 		return
 	}
 
+	// For each port found register the service in consul as a separate service. Each port is reflected in the consul ID
 	for _, p := range data.Resource.Labels.Ports {
 
 		var checkPort int
 		var checkTcp bool
 		var scheme string
 
-
-
-
+		// Setting defaults and checking label values
 		if data.Resource.Labels.HerderServiceCheckTCP != "" {
 			checkTcp, err = strconv.ParseBool(data.Resource.Labels.HerderServiceCheckTCP)
 
@@ -103,10 +100,10 @@ func registerSvc(data *ContainerData) {
 			scheme = data.Resource.Labels.HerderServiceCheckHTTPSchema
 		}
 
-		reg, err := consul.SimpleServiceRegister(&consultant.SimpleServiceRegistration{
-			Name:        data.Resource.Labels.HerderServiceName,
-			Address:     data.Resource.PrimaryIPAddress,
-			ID:          fmt.Sprintf("%s:%s:%s:%d:%s", data.Resource.HostId,
+		_, err := consul.SimpleServiceRegister(&consultant.SimpleServiceRegistration{
+			Name:    data.Resource.Labels.HerderServiceName,
+			Address: data.Resource.PrimaryIPAddress,
+			ID: fmt.Sprintf("%s:%s:%s:%d:%s", data.Resource.HostId,
 				data.Resource.Labels.ContainerName,
 				data.Resource.ID, p.ContainerPort, p.Protocol),
 			Port:        p.ContainerPort,
@@ -122,10 +119,9 @@ func registerSvc(data *ContainerData) {
 			log.Printf("Failed to register service %s: %s", data.Resource.Labels.ContainerName, err)
 			continue
 		}
-		log.Printf("Registered %s", data.Resource.Name)
-		registered = append(registered, reg)
-	}
 
+		log.Printf("Registered %s", data.Resource.Name)
+	}
 
 }
 
@@ -187,11 +183,21 @@ func processEvents(conn *websocket.Conn) error {
 
 			if dataMap.isValid() {
 				// Is the running container on my host?
-				log.Printf("%+v", v.Data)
 				if dataMap.Resource.State == "running" && hostId == dataMap.Resource.HostId {
 					registerSvc(dataMap)
-					log.Printf("Registered Services: %s", strings.Join(registered, ", "))
 				}
+
+				if dataMap.Resource.State == "stopped" && hostId == dataMap.Resource.HostId {
+					servicePrefix := fmt.Sprintf("%s:%s", dataMap.Resource.HostId, dataMap.Resource.Name)
+					serviceId := getConsulServiceId(servicePrefix)
+
+					if serviceId == "" {
+						continue
+					}
+
+					deRegister(serviceId)
+				}
+
 			} else {
 				continue
 			}

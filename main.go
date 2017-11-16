@@ -14,25 +14,29 @@ import (
 	"time"
 )
 
-
-//TODO: Add strict flag
-
 // Get the rancher api data from Environment variables
 var cattle_url = os.Getenv("CATTLE_URL")
 var cattle_access_key = os.Getenv("CATTLE_ACCESS_KEY")
 var cattle_secret_key = os.Getenv("CATTLE_SECRET_KEY")
 
+// Used to determine which host we are on
+const metadataUrl = "http://rancher-metadata/latest"
+
+// Used to make sure we are only capturing events locally
 var agentIp string
 var hostUUID string
 var hostId string
-var registered []string
 
+// Used for diffing services and reconciliation
 var consulServices []interface{}
 var rancherServices []interface{}
 
-const metadataUrl = "http://rancher-metadata/latest"
-
+// Global flag variables
 var interval time.Duration
+var debug bool
+var strict bool
+var consulIp string
+var consulDc string
 
 // Set the rancher client
 var c = &client.RancherClient{}
@@ -79,15 +83,14 @@ type ContainerData struct {
 	} `json:"resource,omitempty"`
 }
 
-type ServiceName struct {
-	HostId        string
-	ContainerName string
-	ContainerId   string
-	ContainerPort string
-	Protocol      string
-}
-
 func init() {
+	flag.StringVar(&consulIp, "consulIp", "", "Set the consul ip for the services to be registered to. If blank it tries to connect to the host external IP\n\t"+
+		"If this flag is not passed the rancher host is detected and consul attempts to register t the agent on the public IP of the host")
+	flag.StringVar(&consulDc, "consulDc", "", "Consul Datacenter")
+	flag.BoolVar(&debug, "debug", false, "Enable debug logs")
+	flag.BoolVar(&strict, "strict", false, "Enable this flag to enforce the herder.service.enable label")
+	flag.DurationVar(&interval, "interval", 5, "How often to run reconcile calculated by value * time.Minute")
+	flag.Parse()
 
 	// Configure cattle client
 	config := &client.ClientOpts{
@@ -103,6 +106,7 @@ func init() {
 
 	log.Print("Client Connection Established...")
 
+	// Get which rancher host we are on and set globa variables
 	m := metadata.NewClient(metadataUrl)
 
 	self, err := m.GetSelfHost()
@@ -120,6 +124,7 @@ func init() {
 		log.Print("Failed to get list of hosts")
 	}
 
+	// Set the local rancher host Id
 	for _, h := range hosts.Data {
 		if h.Uuid == hostUUID {
 			hostId = h.Id
@@ -128,17 +133,24 @@ func init() {
 
 	log.Printf("Monitoring events on Host %s with HostId %s", agentIp, hostId)
 
-	conf := &api.Config{Address: agentIp + ":8500"}
+	// Configure consul client
+	var conf *api.Config
 
+	if consulIp != "" {
+		conf = &api.Config{Address: consulIp,
+			Datacenter: consulDc}
+	} else {
+		conf = &api.Config{Address: agentIp + ":8500",
+			Datacenter: consulDc}
+	}
 	consul, err = consultant.NewClient(conf)
 
 	if err != nil {
-		log.Fatalf("Unable to establish a consul client on the host %s", agentIp)
+		log.Fatalf("Unable to establish a consul client on the host %s", conf.Address)
 	}
 
-	log.Printf("Established consul connection to %s", agentIp)
-	flag.DurationVar(&interval, "interval", 10, "How many minutes to run reconcile")
-	flag.Parse()
+	log.Printf("Established consul connection to %s", conf.Address)
+
 }
 
 func main() {
@@ -173,10 +185,10 @@ func main() {
 
 	select {
 	case sig := <-sigChan:
-		log.Printf("we got signal %s", sig)
+		log.Printf("Recieved and interrupt signal : %v", sig)
 	case err := <-errChan:
 		if err != nil {
-			log.Printf("we got error: %v", err)
+			log.Printf("Error recieved: %v", err)
 			os.Exit(1)
 		}
 	}

@@ -1,13 +1,12 @@
 FROM golang:alpine as builder
 
-COPY ./ /go/src/github.com/dahendel/cattle-herder
-
 RUN apk add --update --no-cache glide git && \
+  go get -d github.com/dahendel/cattle-herder && \
   cd /go/src/github.com/dahendel/cattle-herder && \
   glide install && \
   go build
 
-FROM docker.ena.net:5000/alpine/deploy
+FROM alpine
 
 COPY --from=builder /go/src/github.com/dahendel/cattle-herder/cattle-herder /usr/local/bin/
 

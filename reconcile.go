@@ -1,15 +1,14 @@
 package main
 
 import (
-	set "github.com/deckarep/golang-set"
-	"log"
 	"encoding/json"
 	"fmt"
+	set "github.com/deckarep/golang-set"
+	"github.com/mitchellh/mapstructure"
+	"log"
 	"strings"
 	"time"
-	"github.com/mitchellh/mapstructure"
 )
-
 
 func getConsulServices() error {
 	consulServices = nil
@@ -24,7 +23,9 @@ func getConsulServices() error {
 	for k, _ := range services {
 		consulServices = append(consulServices, strings.ToLower(k))
 	}
-	//log.Printf("Found Consul Services: %s", consulServices)
+	if debug {
+		log.Printf("Found Consul Services: %s", consulServices)
+	}
 	return nil
 }
 
@@ -39,9 +40,6 @@ func getRancherContainers() error {
 
 	for _, c := range containers.Data {
 		for l, v := range c.Labels {
-
-			//log.Printf("LOGGING CONTAINER: %s RANCHER LABELS: %+v", c.Name, c.Labels)
-
 			if l == "annotation.io.kubernetes.container.ports" {
 				ports := make([]*ContainerPorts, 0)
 				err := json.Unmarshal([]byte(v), &ports)
@@ -50,7 +48,6 @@ func getRancherContainers() error {
 					log.Print(err)
 				}
 
-				//log.Printf("CNAME: %s", cName)
 				for _, p := range ports {
 					svcName := strings.ToLower(fmt.Sprintf("%s:%s:%s:%d:%s", c.HostId, c.Name, c.Id,
 						p.ContainerPort, p.Protocol))
@@ -60,8 +57,9 @@ func getRancherContainers() error {
 		}
 	}
 
-	//log.Printf("Rancher Services: %+v", rancherServices)
-
+	if debug {
+		log.Printf("Rancher Services: %+v", rancherServices)
+	}
 	return nil
 }
 
@@ -70,7 +68,10 @@ func diffServices() []interface{} {
 	consulSet := set.NewSetFromSlice(consulServices)
 
 	diff := rancherSet.Difference(consulSet).ToSlice()
-	log.Printf("%+v", diff)
+
+	if debug {
+		log.Printf("Services Diff: %+v", diff)
+	}
 	return diff
 }
 
@@ -87,38 +88,62 @@ func reconcile() error {
 			return err2
 		}
 
-		missing := func() []*ContainerData {
+		// Get all of the stopped containers from Rancher and check if they are registered in Consul
+		containers, err := c.Container.List(nil)
 
-			var data []*ContainerData
-
-			for _, c := range diffServices() {
-				split := strings.Split(c.(string), ":")
-				if len(split) != 5 { continue }
-				data = append(data, buildSvcData(split[2], c.(string)))
-			}
-
-			return data
-
+		if err != nil {
+			log.Printf("Error getting container list for reconcile: %s", err)
+			return nil
 		}
 
-		for _, s := range missing(){
-			if s.isValid() {
-				log.Printf("Reconciling %s", s.Resource.Name)
-				registerSvc(s)
+		// Get all of the stopped containers
+		var stopped []string
+		for _, state := range containers.Data {
+			if state.State == "stopped" {
+				svcPrefix := fmt.Sprintf("%s:%s:%s", state.HostId, state.Name, state.Id)
+				serviceId := getConsulServiceId(svcPrefix)
+				// If the container was registered in consul serviceId should not be blank
+				if serviceId != "" {
+					stopped = append(stopped, serviceId)
+				}
 			}
 		}
 
-		//log.Printf("DATA: %s", missing())
-		time.Sleep(time.Second * interval)
+		// Determine which containers are missing from Consul
+		var missing []*ContainerData
+		for _, c := range diffServices() {
+			split := strings.Split(c.(string), ":")
+			if len(split) != 5 {
+				continue
+			}
+			missing = append(missing, buildSvcData(split[2], c.(string)))
+		}
+
+		for _, m := range missing {
+			if m.isValid() {
+				log.Printf("Reconciling %s adding to consul", m.Resource.Name)
+				registerSvc(m)
+			}
+		}
+
+		for _, s := range stopped {
+			log.Printf("Reconciling stopped service %s", s)
+			deRegister(s)
+		}
+
+		time.Sleep(time.Minute * interval)
 	}
 }
 
 func buildSvcData(containerId string, containerName string) *ContainerData {
 
-	//log.Printf("Building ContainerData for %s", containerName)
+	if debug {
+		log.Printf("Building ContainerData for %s", containerName)
+	}
+
 	container, err := c.Container.ById(containerId)
 
-	if err != nil || container == nil{
+	if err != nil || container == nil {
 		log.Print("Container not Found")
 		return nil
 	}
@@ -139,8 +164,6 @@ func buildSvcData(containerId string, containerName string) *ContainerData {
 	dataMap.Resource.Name = containerName
 	dataMap.Resource.PrimaryIPAddress = container.PrimaryIpAddress
 	dataMap.Resource.State = container.State
-
-	//log.Printf("ContainerLabel: %s", dataMap.Resource.Labels)
 
 	return dataMap
 
