@@ -137,12 +137,15 @@ func init() {
 	var conf *api.Config
 
 	if consulIp != "" {
-		conf = &api.Config{Address: consulIp,
-			Datacenter: consulDc}
+		conf = &api.Config{Address: consulIp}
 	} else {
-		conf = &api.Config{Address: agentIp + ":8500",
-			Datacenter: consulDc}
+		conf = &api.Config{Address: agentIp + ":8500"}
 	}
+
+	if consulDc != "" {
+		conf.Datacenter = consulDc
+	}
+
 	consul, err = consultant.NewClient(conf)
 
 	if err != nil {
