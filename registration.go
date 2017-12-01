@@ -16,6 +16,7 @@ func parseTags(tags string) []string {
 	return strings.Split(tags, ",")
 }
 
+// Make sure that the service is supposed to be tracked via labels and that there are exposed ports
 func (d *ContainerData) isValid() bool {
 
 	if d.Resource.Labels.PortsString == "" {
@@ -30,21 +31,23 @@ func (d *ContainerData) isValid() bool {
 		if d.Resource.Labels.HerderServiceEnable == "" {
 			log.Printf("Missing enable label for : %s", d.Resource.Name)
 			return false
-		} else {
-			enable, err := strconv.ParseBool(d.Resource.Labels.HerderServiceEnable)
-
-			if err != nil {
-				log.Printf("Failed to parse enable, skipping. Error: %s", err)
-				return false
-			}
-
-			return enable
 		}
+
+		enable, err := strconv.ParseBool(d.Resource.Labels.HerderServiceEnable)
+
+		if err != nil {
+			log.Printf("Failed to parse enable, skipping. Error: %s", err)
+			return false
+		}
+
+		return enable
+
 	}
 
 	return true
 }
 
+// Register the service in Consul
 func registerSvc(data *ContainerData) {
 
 	data.Resource.Labels.Ports = make([]*ContainerPorts, 0)
@@ -64,12 +67,12 @@ func registerSvc(data *ContainerData) {
 	for _, p := range data.Resource.Labels.Ports {
 
 		var checkPort int
-		var checkTcp bool
+		var checkTCP bool
 		var scheme string
 
 		// Setting defaults and checking label values
 		if data.Resource.Labels.HerderServiceCheckTCP != "" {
-			checkTcp, err = strconv.ParseBool(data.Resource.Labels.HerderServiceCheckTCP)
+			checkTCP, err = strconv.ParseBool(data.Resource.Labels.HerderServiceCheckTCP)
 
 			if err != nil {
 				log.Print(err)
@@ -103,7 +106,7 @@ func registerSvc(data *ContainerData) {
 		_, err := consul.SimpleServiceRegister(&consultant.SimpleServiceRegistration{
 			Name:    data.Resource.Labels.HerderServiceName,
 			Address: data.Resource.PrimaryIPAddress,
-			ID: fmt.Sprintf("%s:%s:%s:%d:%s", data.Resource.HostId,
+			ID: fmt.Sprintf("%s:%s:%s:%d:%s", data.Resource.HostID,
 				data.Resource.Labels.ContainerName,
 				data.Resource.ID, p.ContainerPort, p.Protocol),
 			Port:        p.ContainerPort,
@@ -111,7 +114,7 @@ func registerSvc(data *ContainerData) {
 			CheckPort:   checkPort,
 			CheckPath:   data.Resource.Labels.HerderServiceCheckPath,
 			Interval:    data.Resource.Labels.HerderServiceCheckInterval,
-			CheckTCP:    checkTcp,
+			CheckTCP:    checkTCP,
 			CheckScheme: scheme},
 		)
 
@@ -125,6 +128,7 @@ func registerSvc(data *ContainerData) {
 
 }
 
+// Grab the rancher WS url from the api
 func getWS() *url.URL {
 	// Get the subscribe schema
 	schemas, _ := c.GetSchemas().CheckSchema("subscribe")
@@ -158,6 +162,7 @@ func getWS() *url.URL {
 	return u
 }
 
+// listen to events and register services
 func processEvents(conn *websocket.Conn) error {
 	// Print the WS Events
 	for {
@@ -183,19 +188,19 @@ func processEvents(conn *websocket.Conn) error {
 
 			if dataMap.isValid() {
 				// Is the running container on my host?
-				if dataMap.Resource.State == "running" && hostId == dataMap.Resource.HostId {
+				if dataMap.Resource.State == "running" && hostID == dataMap.Resource.HostID {
 					registerSvc(dataMap)
 				}
 
-				if dataMap.Resource.State == "stopped" && hostId == dataMap.Resource.HostId {
-					servicePrefix := fmt.Sprintf("%s:%s", dataMap.Resource.HostId, dataMap.Resource.Name)
-					serviceId := getConsulServiceId(servicePrefix)
+				if dataMap.Resource.State == "stopped" && hostID == dataMap.Resource.HostID {
+					servicePrefix := fmt.Sprintf("%s:%s", dataMap.Resource.HostID, dataMap.Resource.Name)
+					serviceID := getConsulServiceID(servicePrefix)
 
-					if serviceId == "" {
+					if serviceID == "" {
 						continue
 					}
 
-					deRegister(serviceId)
+					deRegister(serviceID)
 				}
 
 			} else {

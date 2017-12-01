@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func getConsulServiceId(prefix string) string {
+func getConsulServiceID(prefix string) string {
 	for _, s := range consulServices {
 		if strings.Contains(s.(string), prefix) {
 			return s.(string)
@@ -15,14 +15,14 @@ func getConsulServiceId(prefix string) string {
 	return ""
 }
 
-func deRegister(serviceId string) {
+func deRegister(serviceID string) {
 
-	err = consul.Agent().ServiceDeregister(serviceId)
+	err = consul.Agent().ServiceDeregister(serviceID)
 
 	if err != nil {
-		log.Printf("Error deregistering %s: %s", serviceId, err)
+		log.Printf("Error deregistering %s: %s", serviceID, err)
 		return
 	}
 
-	log.Printf("Service %s deregistered", serviceId)
+	log.Printf("Service %s deregistered", serviceID)
 }

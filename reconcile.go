@@ -21,7 +21,7 @@ func getConsulServices() error {
 		return err
 	}
 
-	for k, _ := range services {
+	for k := range services {
 		consulServices = append(consulServices, strings.ToLower(k))
 	}
 	if debug {
@@ -106,10 +106,10 @@ func reconcile() error {
 		var stopped []string
 		for _, state := range containers.Data {
 			if state.State == "stopped" {
-				if hostId == state.HostId {
+				if hostID == state.HostId {
 					svcPrefix := fmt.Sprintf("%s:%s:%s", state.HostId, state.Name, state.Id)
-					serviceId := getConsulServiceId(svcPrefix)
-					stopped = append(stopped, serviceId)
+					serviceID := getConsulServiceID(svcPrefix)
+					stopped = append(stopped, serviceID)
 				}
 			}
 		}
@@ -128,7 +128,7 @@ func reconcile() error {
 
 		for _, m := range missing {
 			if m.isValid() {
-				if hostId == m.Resource.HostId {
+				if hostID == m.Resource.HostID {
 					log.Printf("Reconciling %s adding to consul", m.Resource.Name)
 					registerSvc(m)
 				}
@@ -152,13 +152,13 @@ func reconcile() error {
 	}
 }
 
-func buildSvcData(containerId string, containerName string) *ContainerData {
+func buildSvcData(containerID string, containerName string) *ContainerData {
 
 	if debug {
 		log.Printf("Building ContainerData for %s", containerName)
 	}
 
-	container, err := c.Container.ById(containerId)
+	container, err := c.Container.ById(containerID)
 
 	if err != nil || container == nil {
 		log.Print("Container not Found")
@@ -177,9 +177,9 @@ func buildSvcData(containerId string, containerName string) *ContainerData {
 		log.Print(err)
 	}
 
-	// Build the Container Data for svcregister
+	// Build the Container Data for register service
 	dataMap.Resource.ID = container.Id
-	dataMap.Resource.HostId = container.HostId
+	dataMap.Resource.HostID = container.HostId
 	dataMap.Resource.Name = containerName
 	dataMap.Resource.PrimaryIPAddress = container.PrimaryIpAddress
 	dataMap.Resource.State = container.State

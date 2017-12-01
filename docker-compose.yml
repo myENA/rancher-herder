@@ -2,7 +2,7 @@ version: "2"
 
 services:
   herder:
-    image: dahendel/cattle-herder
+    image: dahendel/rancher-herder
     labels:
       io.rancher.container.create_agent: true
       io.rancher.container.agent.role: environmentAdmin
