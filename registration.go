@@ -131,7 +131,7 @@ func registerSvc(data *ContainerData) {
 // Grab the rancher WS url from the api
 func getWS() *url.URL {
 	// Get the subscribe schema
-	schemas, _ := c.GetSchemas().CheckSchema("subscribe")
+	schemas, _ := rancher.GetSchemas().CheckSchema("subscribe")
 
 	// Extract the url
 	urlString := schemas.Links["collection"]

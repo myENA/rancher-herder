@@ -1,10 +1,10 @@
-hash: 4d810499e727476eb83ff72a313016844454594577bcdc8159d69d67f0acd3ff
-updated: 2017-11-15T10:39:42.400281226-06:00
+hash: 900bea8a83b1bfb75cd2f99e46b6f34ee3f6d44b6bfdc77c731d51cabc8d0a64
+updated: 2017-12-11T15:39:41.507650518-06:00
 imports:
 - name: github.com/deckarep/golang-set
   version: 1d4478f51bed434f1dadf96dcd9b43aabac66795
 - name: github.com/gorilla/websocket
-  version: 7ca4275b84a9d500f68971c8c4a97f0ec18eb889
+  version: cdedf21e585dae942951e34d6defc3215b4280fa
 - name: github.com/hashicorp/consul
   version: 783a405d781ffc5edaf2d6b5eff41e22df96644f
   subpackages:
@@ -23,7 +23,7 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: 06020f85339e21b2478f756a78e295255ffa4d6a
 - name: github.com/myENA/consultant
-  version: 28def437cc3e4fe2614504e20ed07487556f547a
+  version: 281d7b718ef062520c1ee8aa5adc11deff721ad3
 - name: github.com/myENA/go-helpers
   version: 7d17a5f4b05cb1ecfe56203c0458e22d14fb4f45
 - name: github.com/myENA/go-stdlogger
@@ -43,14 +43,9 @@ imports:
 - name: github.com/satori/go.uuid
   version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/Sirupsen/logrus
-  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
-- name: golang.org/x/crypto
-  version: 9f005a07e0d31d45e6656d241bb5c0f2efd4bc94
-  subpackages:
-  - ssh/terminal
+  version: c078b1e43f58d563c74cebe63c85789e76ddb627
 - name: golang.org/x/sys
-  version: bf42f188b9bc6f2cf5b8ee5a912ef1aedd0eba4c
+  version: 46eaec7899b1dd945c25db17c78ba3f0c58a6613
   subpackages:
   - unix
-  - windows
 testImports: []

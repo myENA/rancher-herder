@@ -34,7 +34,7 @@ func getConsulServices() error {
 func getRancherContainers() error {
 
 	rancherServices = nil
-	containers, err := c.Container.List(nil)
+	containers, err := rancher.Container.List(nil)
 	if err != nil {
 		log.Printf("Failed to get Rancher containers: %s", err)
 		return err
@@ -95,7 +95,7 @@ func reconcile() error {
 		}
 
 		// Get all of the containers from Rancher
-		containers, err := c.Container.List(nil)
+		containers, err := rancher.Container.List(nil)
 
 		if err != nil {
 			log.Printf("Error getting container list for reconcile: %s", err)
@@ -158,7 +158,7 @@ func buildSvcData(containerID string, containerName string) *ContainerData {
 		log.Printf("Building ContainerData for %s", containerName)
 	}
 
-	container, err := c.Container.ById(containerID)
+	container, err := rancher.Container.ById(containerID)
 
 	if err != nil || container == nil {
 		log.Print("Container not Found")

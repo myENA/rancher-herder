@@ -9,7 +9,14 @@ If the `-strict` flag is passed then the `herder.service.enable` label must be s
 not that this service registers containers in the environment (k8s namespace) that is deployed in. To run the service globally you will need to supply the container
 with admin api keys by setting the ENV variables `CATTLE_URL` `CATTLE_SECRET_KEY` `CATTLE_ACCESS_KEY` and deploy with the cluster level core-services.  
 
-##### Note: The container will restart once the first time it runs. Working on the why, but after it restarts the service runs properly
+##### Note: The container will restart once or twice the first time it runs. Working on the why, but after it restarts the service runs properly
+
+#### Build
+```bash
+glide up -v
+go build
+```
+
 
 #### CLI Flags
 ```bash

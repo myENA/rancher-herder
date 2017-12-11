@@ -9,5 +9,4 @@ import:
   subpackages:
   - metadata
 - package: github.com/rancherio/go-rancher
-- package: github.com/gorilla/websocket
 - package: github.com/deckarep/golang-set

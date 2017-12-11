@@ -39,7 +39,7 @@ var consulIP string
 var consulDC string
 
 // Set the rancher client
-var c = &client.RancherClient{}
+var rancher = &client.RancherClient{}
 var err error
 
 //set global consul client
@@ -103,7 +103,7 @@ func init() {
 		SecretKey: cattleSecretKey,
 	}
 
-	c, err = client.NewRancherClient(config)
+	rancher, err = client.NewRancherClient(config)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -122,7 +122,7 @@ func init() {
 	agentIP = self.AgentIP
 	hostUUID = self.UUID
 
-	hosts, err := c.Host.List(nil)
+	hosts, err := rancher.Host.List(nil)
 
 	if err != nil {
 		log.Print("Failed to get list of hosts")
@@ -167,7 +167,7 @@ func main() {
 	ws := getWS()
 
 	// Establish websocket connection
-	conn, resp, err := c.Websocket(ws.String(), nil)
+	conn, resp, err := rancher.Websocket(ws.String(), nil)
 	if err != nil {
 		log.Panic(err)
 	}
